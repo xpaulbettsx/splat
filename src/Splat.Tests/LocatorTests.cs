@@ -18,6 +18,28 @@ namespace Splat.Tests
     public class LocatorTests
     {
         /// <summary>
+        /// Shoulds the resolve nulls.
+        /// </summary>
+        [Fact]
+        public void Can_Register_And_Resolve_Null_Types()
+        {
+            var container = new InternalLocator();
+
+            var foo = 5;
+            container.CurrentMutable.Register(() => foo, null!);
+
+            var bar = 4;
+            var contract = "foo";
+            container.CurrentMutable.Register(() => bar, null!, contract);
+
+            var value = container.Current.GetService(null!);
+            Assert.Equal(foo, value);
+
+            value = container.Current.GetService(null!, contract);
+            Assert.Equal(bar, value);
+        }
+
+        /// <summary>
         /// Tests if the registrations are not empty on no external registrations.
         /// </summary>
         [Fact]
@@ -44,6 +66,20 @@ namespace Splat.Tests
             var testLocator = new InternalLocator();
             var logManager = testLocator.Current.GetService(typeof(ILogManager), "test");
             var logger = testLocator.Current.GetService(typeof(ILogger), "test");
+
+            Assert.Null(logManager);
+            Assert.Null(logger);
+        }
+
+        /// <summary>
+        /// Tests that if we use a contract it returns null entries for that type.
+        /// </summary>
+        [Fact]
+        public void InitializeSplat_ContractRegistrationsExtensionMethodsNullNoRegistration()
+        {
+            var testLocator = new InternalLocator();
+            var logManager = testLocator.Current.GetService<ILogManager>("test");
+            var logger = testLocator.Current.GetService<ILogger>("test");
 
             Assert.Null(logManager);
             Assert.Null(logger);
@@ -198,6 +234,64 @@ namespace Splat.Tests
         }
 
         /// <summary>
+        /// Nullables the type.
+        /// </summary>
+        [Fact]
+        public void RegisterAndResolveANullableTypeWithValue()
+        {
+            Locator.CurrentMutable.Register<DummyObjectClass1?>(() => new());
+            var doc = Locator.Current.GetService<DummyObjectClass1?>();
+            doc.Should().BeOfType<DummyObjectClass1>();
+        }
+
+        /// <summary>
+        /// Nullables the type.
+        /// </summary>
+        [Fact]
+        public void RegisterAndResolveANullableTypeWithNull()
+        {
+            Locator.CurrentMutable.Register<DummyObjectClass1?>(() => null);
+            var doc = Locator.Current.GetService<DummyObjectClass1?>();
+            doc.Should().BeNull();
+        }
+
+        /// <summary>
+        /// Nullables the type.
+        /// </summary>
+        [Fact]
+        public void RegisterAndResolveANullableTypeWithValueLocatorDisposed()
+        {
+            var currentMutable = new ModernDependencyResolver();
+            currentMutable.Register<DummyObjectClass1?>(() => new());
+            currentMutable.Dispose();
+            var doc = currentMutable.GetService<DummyObjectClass1?>();
+            doc.Should().BeNull();
+        }
+
+        /// <summary>
+        /// Nullables the type.
+        /// </summary>
+        [Fact]
+        public void RegisterAndResolveANullableTypeWithDefault()
+        {
+            Locator.CurrentMutable.Register<DummyObjectClass1?>(() => default);
+            var doc = Locator.Current.GetService<DummyObjectClass1?>();
+            doc.Should().BeNull();
+        }
+
+        /// <summary>
+        /// Nullables the type.
+        /// </summary>
+        [Fact]
+        public void RegisterAndResolveANullableTypeWithNulledInstance()
+        {
+            DummyObjectClass1? dummy = null;
+            Locator.CurrentMutable.Register<DummyObjectClass1?>(() => dummy);
+            var doc = Locator.Current.GetService<DummyObjectClass1?>();
+            doc.Should().BeNull();
+        }
+
+        /// <summary>
         /// Tests to make sure that the unregister all functions correctly.
         /// This is a test when there are values not registered.
         /// </summary>
@@ -280,15 +374,15 @@ namespace Splat.Tests
         public void FuncDependencyResolver_UnregisterAll()
         {
             bool unregisterAllCalled = false;
-            Type type = null;
-            string contract = null;
+            Type? type = null;
+            string? contract = null;
 
             var currentMutable = new FuncDependencyResolver(
                 (funcType, funcContract) => Array.Empty<object>(),
                 unregisterAll: (passedType, passedContract) =>
                 {
                     unregisterAllCalled = true;
-                    contract = passedContract;
+                    contract = passedContract!;
                     type = passedType;
                 });
 
@@ -312,15 +406,15 @@ namespace Splat.Tests
         public void FuncDependencyResolver_UnregisterCurrent()
         {
             bool unregisterAllCalled = false;
-            Type type = null;
-            string contract = null;
+            Type? type = null;
+            string? contract = null;
 
             var currentMutable = new FuncDependencyResolver(
                 (funcType, funcContract) => Array.Empty<object>(),
                 unregisterCurrent: (passedType, passedContract) =>
                 {
                     unregisterAllCalled = true;
-                    contract = passedContract;
+                    contract = passedContract!;
                     type = passedType;
                 });
 
